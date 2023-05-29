@@ -8,18 +8,26 @@ contract StackUp {
   SUBMITTED
 }
 
+enum ReviewStatus {
+        REJECT,
+        APPROVED,
+        REWARD
+    }
+
 struct Quest {
   uint256 questId;
   uint256 numberOfPlayers;
   string title;
   uint8 reward;
   uint256 numberOfRewards;
+  ReviewStatus reviewStatus; // Added reviewStatus field
 }
 
 address public admin;
 uint256 public nextQuestId;
 mapping(uint256 => Quest) public quests;
 mapping(address => mapping(uint256 => playerQuestStatus)) public playerQuestStatuses;
+mapping(address => mapping(uint256 => ReviewStatus)) public questReviewStatuses;
 
 constructor() {
   admin = msg.sender;
@@ -58,7 +66,19 @@ function submitQuest(uint256 questId) external questExists(questId) {
   );
   playerQuestStatuses[msg.sender][questId] = playerQuestStatus.SUBMITTED;
 }
+function modifyReviewStatus(uint256 questId, ReviewStatus newStatus, address _user) external onlyAdmin questExists(questId) {
+       require(
+    playerQuestStatuses[_user][questId] ==
+    playerQuestStatus.SUBMITTED,
+    "Player must first submit the quest"
+  );
+   quests[questId].reviewStatus = newStatus;
+    }
 
+     modifier onlyAdmin() {
+        require(msg.sender == admin, "Only the admin can call this function");
+        _;
+    }
 modifier questExists(uint256 questId) {
   require(quests[questId].reward != 0, "Quest does not exist");
   _;
